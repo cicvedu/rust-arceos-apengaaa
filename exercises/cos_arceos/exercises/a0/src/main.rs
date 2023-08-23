@@ -4,11 +4,18 @@
 #[cfg(feature = "axstd")]
 use axstd::println;
 
-
+macro_rules! println_prefix {
+    ($prefix:expr, $($arg:tt)*) => {
+        #[cfg(feature = "axstd")]
+        {
+            println!("{}{}", $prefix, format_args!($($arg)*));
+        }
+    };
+}
 
 // TODO: Implement macro println_prefix.
 #[cfg(feature = "axstd")]
-use axstd::println_prefix;
+
 
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
