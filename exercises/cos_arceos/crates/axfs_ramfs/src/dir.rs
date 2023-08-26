@@ -67,6 +67,9 @@ impl DirNode {
         children.remove(name);
         Ok(())
     }
+    pub fn set_parent_node(&mut self, parent_node: Option<VfsNodeRef>) {
+        self.parent_node = parent_node;
+    }
 }
 
 impl VfsNodeOps for DirNode {
@@ -177,4 +180,41 @@ fn split_path(path: &str) -> (&str, Option<&str>) {
     trimmed_path.find('/').map_or((trimmed_path, None), |n| {
         (&trimmed_path[..n], Some(&trimmed_path[n + 1..]))
     })
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+impl DirNode {
+    // Add a new method to retrieve the parent node
+    pub fn parent_node(&self) -> Option<VfsNodeRef> {
+        self.parent_node.clone()
+    }
+    
+    // Add a new method to get the path of the current node
+    pub fn get_path(&self) -> String {
+        let mut path = String::new();
+        let mut node = self as VfsNodeRef;
+        while let Some(parent) = node.parent() {
+            let name = parent
+                .downcast_ref::<DirNode>()
+                .and_then(|dir| {
+                    dir.children
+                        .read()
+                        .iter()
+                        .find(|(_, child)| Arc::ptr_eq(child, &node))
+                        .map(|(name, _)| name.clone())
+                })
+                .unwrap_or_else(|| "<unknown>".to_string());
+
+            path = format!("/{}/{}", name, path);
+            node = parent;
+        }
+        path.insert_str(0, "/"); // Add the root marker
+        path
+    }
 }
